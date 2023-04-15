@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+env:
+  FOUNDRY_PROFILE: lite
+  INFURA_KEY: ${{ secrets.INFURA_KEY }}
+  ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+  GC_RPC: ${{ secrets.GC_RPC }}
+  POLYGON_RPC: ${{ secrets.POLYGON_RPC }}
+  PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+  
+jobs:
+  
+  lint:
+    name: "Markdown linting"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        name: Check out the code
+      - name: Lint Code Base
+        uses: docker://avtodev/markdown-lint:v1
+        with:
+          args: "**/*.md"
+  test:
+    name: "Foundry tests"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Check formatting
+        run: forge fmt --check
+      
+      - name: Check contract sizes
+        run: forge build --sizes --skip script
+
+      - name: Run tests
+        run: forge test -vvv
